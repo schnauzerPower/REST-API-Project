@@ -1,5 +1,8 @@
 'use strict';
 
+const { sequelize, models } = require('./models');
+const {user, course} = models;
+
 // load modules
 const express = require('express');
 const morgan = require('morgan');
@@ -21,6 +24,23 @@ app.get('/', (req, res) => {
     message: 'Welcome to the REST API project!',
   });
 });
+
+console.log('Testing the connection to the database...');
+
+(async () => {
+  try {
+    // Test the connection to the database
+    console.log('Connection to the database successful!');
+    await sequelize.authenticate();
+      } catch(error) {
+        if (error.name === 'SequelizeValidationError') {
+          const errors = error.errors.map(err => err.message);
+          console.error('Validation errors: ', errors);
+        } else {
+          throw error;
+        }
+  }
+})();
 
 // send 404 if no other route matched
 app.use((req, res) => {
