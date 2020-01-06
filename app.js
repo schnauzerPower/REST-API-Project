@@ -1,11 +1,17 @@
 'use strict';
 
 const { sequelize, models } = require('./models');
-const {user, course} = models;
+
+const {User, Course} = models;
+
 
 // load modules
 const express = require('express');
 const morgan = require('morgan');
+const auth = require('basic-auth');
+const bcryptjs = require('bcryptjs');
+const bodyParser = require('body-parser');
+const { check, validationResult } = require('express-validator');
 
 // variable to enable global error logging
 const enableGlobalErrorLogging = process.env.ENABLE_GLOBAL_ERROR_LOGGING === 'true';
@@ -15,6 +21,7 @@ const app = express();
 
 // setup morgan which gives us http request logging
 app.use(morgan('dev'));
+app.use(bodyParser.json())
 
 // TODO setup your api routes here
 
@@ -30,8 +37,8 @@ console.log('Testing the connection to the database...');
 (async () => {
   try {
     // Test the connection to the database
-    console.log('Connection to the database successful!');
     await sequelize.authenticate();
+    console.log('Connection to the database successful!');
       } catch(error) {
         if (error.name === 'SequelizeValidationError') {
           const errors = error.errors.map(err => err.message);
@@ -41,6 +48,90 @@ console.log('Testing the connection to the database...');
         }
   }
 })();
+
+//User routes
+
+const authenticateUser = async (req, res, next) => {
+    const credentials = auth(req);
+    let message = null;
+    
+    
+   
+    if(credentials) {
+        
+        const name = await User.findOne({
+            where: {
+                'firstName': credentials.name
+            }
+        })
+        
+        if(name) {
+            const authenticated = bcryptjs.compareSync(credentials.pass, name.password);
+           
+        
+            if(authenticated) {
+                req.currentUser = name;
+                
+                
+            }else {
+                message = "Authentication failure for username: " + credentials.name;
+            }
+        }else {
+            message = `User not found for username: ${credentials.name}`;
+        }
+    }else {
+        message = "Authorization header not found. Unable to search database." 
+    }
+    
+    if(message) {
+        console.warn(message);
+        res.status(401).json({ message: 'Access Denied' });
+    }
+    
+    
+    next();
+}
+
+app.get('/api/users', authenticateUser, (req, res) => {
+    const user = req.currentUser;
+    res.json({
+        name: user.firstName + " " + user.lastName,
+        id: user.id
+    });
+
+});
+
+app.post('/api/users', [
+    check('firstName').exists({checkNull: true, checkFalsy: true}).withMessage('Please provide a value for first name.'),
+    check('lastName').exists({checkNull: true, checkFalsy: true}).withMessage('Please provide a value for last name.'),
+    check('email').exists({checkNull: true, checkFalsy: true}).withMessage('Please provide a value for email.'),
+    check('password').exists({checkNull: true, checkFalsy: true}).withMessage('Please provide a value for password.'),
+    
+], (req, res) => {
+    const errors = validationResult(req);
+    
+    if(!errors.isEmpty()) {
+        const errorMessages = errors.array().map(error => error.msg);
+        return res.status(400).json({errors: errorMessages});
+    }
+    const user = req.body;
+    user.password = bcryptjs.hashSync(user.password);
+    
+    User.create({
+        firstName: user.firstName,
+        lastName: user.lastName,
+        emailAddress: user.email,
+        password: user.password
+    }),
+    
+    res.status(201).location('/').end();
+    
+});
+
+
+/*router.get('/', (req, res, next) => {
+  res.render("all_books");
+});*/
 
 // send 404 if no other route matched
 app.use((req, res) => {

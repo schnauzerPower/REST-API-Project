@@ -44,8 +44,28 @@ module.exports = (sequelize) => {
         }
     }, {sequelize});
     
+    User.associate = (models) => {
+        User.hasMany(models.Course, {
+            as: 'student',
+            foreignKey: {
+                fieldName: 'userId',
+                allowNull: false,
+            },
+        });    
+    }
+    
     return User;
 }
+
+ /*Person.associate = (models) => {
+    Person.hasMany(models.Movie, {
+      as: 'director',
+      foreignKey: {
+        fieldName: 'directorPersonId',
+        allowNull: false,
+      },
+    });
+  };*/
 
 
 
