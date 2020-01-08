@@ -10,14 +10,6 @@ module.exports = (sequelize) => {
           primaryKey: true,
           autoIncrement: true,
         },
-        firstName: {
-            type: Sequelize.STRING,
-            validate: {
-                notEmpty: {
-                    msg: '"First Name" is required'
-                }
-            }
-        },
         title: {
             type: Sequelize.STRING,
             validate: {
@@ -44,7 +36,7 @@ module.exports = (sequelize) => {
     
      Course.associate = (models) => {
         Course.belongsTo(models.User, {
-          as: 'student',
+          as: 'instructor',
           foreignKey: {
             fieldName: 'userId',
             allowNull: false,

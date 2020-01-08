@@ -54,8 +54,6 @@ console.log('Testing the connection to the database...');
 const authenticateUser = async (req, res, next) => {
     const credentials = auth(req);
     let message = null;
-    
-    
    
     if(credentials) {
         
@@ -128,10 +126,85 @@ app.post('/api/users', [
     
 });
 
+//course routes
 
-/*router.get('/', (req, res, next) => {
-  res.render("all_books");
-});*/
+app.get('/api/courses', async (req, res) => {
+    try {
+        const courses = await Course.findAll({
+            attributes: ['title', 'userId']
+        });
+        res.json({
+            courses
+        });
+        res.status(200).end();
+    }catch(error) {
+        console.error(error);
+    }
+})
+
+app.get('/api/courses/:id', async (req, res) => {
+    try {
+        const courseRequest = req.params.id;
+        
+        const course = await Course.findAll({
+            where: {
+                id: courseRequest
+            },
+            attributes: ['title', 'userId']
+        })
+        
+         res.json({
+            course
+        }); 
+    }catch(error) {
+        console.error(error);
+    }
+    
+})
+
+app.post('/api/courses', async (req, res) => {
+    try {
+        const newCourse = req.body;
+        await Course.create({
+            title: newCourse.title,
+            description: newCourse.description,
+            estimatedTime: newCourse.estimatedTime,
+            materialsNeeded: newCourse.materialsNeeded,
+            userId: newCourse.userId
+        })
+        
+        res.status(201).end();
+
+    }catch(error) {
+        console.error(error);
+    }
+    
+    
+})
+
+
+ /*title: {
+            type: Sequelize.STRING,
+            validate: {
+                notEmpty: {
+                    msg: '"Title" is required'
+                }
+            }
+        },
+        description: {
+            type: Sequelize.STRING,
+            validate: {
+                notEmpty: {
+                    msg: '"Description" is required'
+                }
+            }
+        },
+        estimatedTime: {
+            type: Sequelize.STRING,
+        },
+        materialsNeeded: {
+            type: Sequelize.STRING,
+        }*/
 
 // send 404 if no other route matched
 app.use((req, res) => {
