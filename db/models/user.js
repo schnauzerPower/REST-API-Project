@@ -49,7 +49,7 @@ module.exports = (sequelize) => {
             as: 'instructor',
             foreignKey: {
                 fieldName: 'userId',
-                allowNull: false,
+                allowNull: true,
             },
         });    
     }
