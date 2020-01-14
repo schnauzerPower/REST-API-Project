@@ -5,12 +5,13 @@ const { check, validationResult } = require('express-validator');
 const auth = require('basic-auth');
 const bcryptjs = require('bcryptjs');
 const bodyParser = require('body-parser');
+const authenticateUser = require('./authenticate');
 
 const db = require('../db');
 const { User, Course } = db.models;
 
 
-const authenticateUser = async (req, res, next) => {
+/*const authenticateUser = async (req, res, next) => {
     const credentials = auth(req);
     let message = null;
    
@@ -38,13 +39,15 @@ const authenticateUser = async (req, res, next) => {
         res.status(401).json({ message: 'Access Denied' });
     }
     next();
-}
+}*/
 
 
 
 
 
-router.get('/users', authenticateUser, (req, res) => {
+router.get('/users', authenticateUser.data.authenticateUser, (req, res) => {
+    console.log("Start here");
+    console.log(authenticateUser);
     const user = req.currentUser;
     console.log(req.currentUser)
     res.json({
@@ -55,7 +58,7 @@ router.get('/users', authenticateUser, (req, res) => {
 });
 
 
-router.post('/users', authenticateUser, [
+router.post('/users', [
     check('firstName').exists({checkNull: true, checkFalsy: true}).withMessage('Please provide a value for first name.'),
     check('lastName').exists({checkNull: true, checkFalsy: true}).withMessage('Please provide a value for last name.'),
     check('email').exists({checkNull: true, checkFalsy: true}).withMessage('Please provide a value for email.'),

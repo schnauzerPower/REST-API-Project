@@ -144,6 +144,8 @@ router.post('/courses', authenticateUser, [
             userId: 1
            
         })
+        console.log("Start here");
+        console.log(results);
         const course = await Course.findAll({
             attributes: [newCourse.title]
         })
