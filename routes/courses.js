@@ -5,6 +5,7 @@ const { check, validationResult } = require('express-validator');
 const auth = require('basic-auth');
 const bcryptjs = require('bcryptjs');
 const bodyParser = require('body-parser');
+const authenticateUser = require('./authenticate');
 
 const db = require('../db');
 const { Course, User } = db.models;
@@ -12,7 +13,7 @@ const { Course, User } = db.models;
 
 
 
-const authenticateUser = async (req, res, next) => {
+/*const authenticateUser = async (req, res, next) => {
     const credentials = auth(req);
     let message = null;
     console.log(Course)
@@ -41,7 +42,7 @@ const authenticateUser = async (req, res, next) => {
         res.status(401).json({ message: 'Access Denied' });
     }
     next();
-}
+}*/
 
 router.get('/courses', async (req, res) => {
     try {
@@ -77,7 +78,7 @@ router.get('/courses/:id', async (req, res) => {
     
 })
 
-router.put('/courses/:id', authenticateUser, [
+router.put('/courses/:id', authenticateUser.data.authenticateUser, [
     check('title').exists({checkNull: true, checkFalsy: true}).withMessage('Please provide a value for title.'),
     check('description').exists({checkNull: true, checkFalsy: true}).withMessage('Please provide a value for description.'),
     check('estimatedTime').exists({checkNull: true, checkFalsy: true}).withMessage('Please provide a value for email.'),
@@ -105,7 +106,7 @@ router.put('/courses/:id', authenticateUser, [
     
 }) 
 
-router.delete('/courses/:id', authenticateUser, async (req, res) => {
+router.delete('/courses/:id', authenticateUser.data.authenticateUser, async (req, res) => {
    const updatedInfo = req.body;
     
    await Course.destroy({
@@ -119,7 +120,7 @@ router.delete('/courses/:id', authenticateUser, async (req, res) => {
 }) 
     
 
-router.post('/courses', authenticateUser, [
+router.post('/courses', authenticateUser.data.authenticateUser, [
     check('title').exists({checkNull: true, checkFalsy: true}).withMessage('Please provide a value for title.'),
     check('description').exists({checkNull: true, checkFalsy: true}).withMessage('Please provide a value for description.'),
     check('estimatedTime').exists({checkNull: true, checkFalsy: true}).withMessage('Please provide a value for estimatedTime.'),
@@ -136,7 +137,7 @@ router.post('/courses', authenticateUser, [
         const newCourse = req.body;
     
         
-        await Course.create({
+        let course = await Course.create({
             title: newCourse.title,
             description: newCourse.description,
             estimatedTime: newCourse.estimatedTime,
@@ -144,15 +145,10 @@ router.post('/courses', authenticateUser, [
             userId: 1
            
         })
-        console.log("Start here");
-        console.log(results);
-        const course = await Course.findAll({
-            attributes: [newCourse.title]
-        })
         
-        
-        res.location('/courses/' + course.id)
-        res.status(201); 
+        const courseParam = course.dataValues.id
+        res.location(`/courses/${courseParam}`)
+        res.status(201).end(); 
     }catch(error) {
         console.warn(error);
     }
