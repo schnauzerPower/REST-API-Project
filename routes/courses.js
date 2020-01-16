@@ -2,61 +2,31 @@
 const express = require('express');
 const router = express.Router();
 const { check, validationResult } = require('express-validator');
-const auth = require('basic-auth');
-const bcryptjs = require('bcryptjs');
 const bodyParser = require('body-parser');
 const authenticateUser = require('./authenticate');
 
 const db = require('../db');
 const { Course, User } = db.models;
 
-
-
-
-/*const authenticateUser = async (req, res, next) => {
-    const credentials = auth(req);
-    let message = null;
-    console.log(Course)
-   
-    if(credentials) {
-        const name = await User.findOne({
-            where: {
-                'firstName': credentials.name
-            }
-        })
-        if(name) {
-            const authenticated = bcryptjs.compareSync(credentials.pass, name.password);
-            if(authenticated) {
-                req.currentUser = name;
-            }else {
-                message = "Authentication failure for username: " + credentials.name;
-            }
-        }else {
-            message = `User not found for username: ${credentials.name}`;
-        }
-    }else {
-        message = "Authorization header not found. Unable to search database." 
-    }
-    if(message) {
-        console.warn(message);
-        res.status(401).json({ message: 'Access Denied' });
-    }
-    next();
-}*/
-
-router.get('/courses', async (req, res) => {
+function asyncHandler(cb){
+  return async (req, res, next)=>{
     try {
-        const courses = await Course.findAll({
-            attributes: ['title', 'userId']
-        });
-        res.json({
-            courses
-        });
-        res.status(200).end();
-    }catch(error) {
-        console.error(error);
+      await cb(req,res, next);
+    } catch(err){
+      next(err);
     }
-})
+  };
+}
+
+router.get('/courses', asyncHandler(async(req, res)=> {
+    const courses = await Course.findAll({
+        attributes: ['title', 'userId']
+    });
+    res.json({
+        courses
+    });
+    res.status(200).end();
+}))
 
 router.get('/courses/:id', async (req, res) => {
     try {
