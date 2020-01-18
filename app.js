@@ -3,6 +3,7 @@
 const { sequelize, models } = require('./db');
 const {User, Course} = models;
 
+
 // load modules
 const express = require('express');
 const users = require('./routes/users');
@@ -46,7 +47,8 @@ console.log('Testing the connection to the database...');
           const errors = error.errors.map(err => err.message);
           console.error('Validation errors: ', errors);
         } else {
-          throw error;
+            console.log("Connection to the database failed!")
+            throw error;
         }
   }
 })();

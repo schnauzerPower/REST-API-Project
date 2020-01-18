@@ -28,8 +28,8 @@ router.get('/courses', asyncHandler(async(req, res)=> {
     res.status(200).end();
 }))
 
-router.get('/courses/:id', async (req, res) => {
-    try {
+router.get('/courses/:id', asyncHandler(async (req, res) => {
+        
         const courseRequest = req.params.id;
         
         const course = await Course.findAll({
@@ -42,11 +42,7 @@ router.get('/courses/:id', async (req, res) => {
          res.json({
             course
         }); 
-    }catch(error) {
-        console.error(error);
-    }
-    
-})
+}))
 
 router.put('/courses/:id', authenticateUser.data.authenticateUser, [
     check('title').exists({checkNull: true, checkFalsy: true}).withMessage('Please provide a value for title.'),
@@ -54,40 +50,54 @@ router.put('/courses/:id', authenticateUser.data.authenticateUser, [
     check('estimatedTime').exists({checkNull: true, checkFalsy: true}).withMessage('Please provide a value for email.'),
     check('materialsNeeded').exists({checkNull: true, checkFalsy: true}).withMessage('Please provide a value for password.'),
     
-], async (req, res) => {
+], asyncHandler(async (req, res) => {
     const errors = validationResult(req);
     
     if(!errors.isEmpty()) {
         const errorMessages = errors.array().map(error => error.msg);
         return res.status(400).json({errors: errorMessages});
     }
-    const updatedInfo = req.body;
+  
+    const courseToUpdate = await Course.findByPk(req.params.id);
     
-    await Course.update(
-       {title: updatedInfo.title,
-        description: updatedInfo.description,
-        estimatedTime: updatedInfo.estimatedTime,
-        materialsNeeded: updatedInfo.materialsNeeded
-       },
-       {where: {id: req.params.id}}
-    )
+    if(courseToUpdate.userId == req.currentUser.id) {
+        const updatedInfo = req.body;
     
-   res.status(204).end();
-    
-}) 
+        await Course.update(
+           {title: updatedInfo.title,
+            description: updatedInfo.description,
+            estimatedTime: updatedInfo.estimatedTime,
+            materialsNeeded: updatedInfo.materialsNeeded
+           },
+           {where: {id: req.params.id}}
+        )
+       res.status(204).end();  
+    }else {
+        res.status(403).json({message: "You are not authorized to update this course"}).end();
+    }    
+})) 
 
-router.delete('/courses/:id', authenticateUser.data.authenticateUser, async (req, res) => {
-   const updatedInfo = req.body;
+router.delete('/courses/:id', authenticateUser.data.authenticateUser, asyncHandler(async (req, res) => {
+   
+    const courseToUpdate = await Course.findByPk(req.params.id);
     
-   await Course.destroy({
-      where: {
-        id: req.params.id
-      }
-    });
+    if(courseToUpdate.userId == req.currentUser.id) {
+        const updatedInfo = req.body;
     
-   res.status(204).end();
+        await Course.destroy({
+          where: {
+            id: req.params.id
+          }
+        });
     
-}) 
+        res.status(204).end();
+    }else {
+        res.status(403).json({message: "You are not authorized to delete this course"}).end();
+    }     
+    
+    
+    
+})) 
     
 
 router.post('/courses', authenticateUser.data.authenticateUser, [
@@ -96,8 +106,7 @@ router.post('/courses', authenticateUser.data.authenticateUser, [
     check('estimatedTime').exists({checkNull: true, checkFalsy: true}).withMessage('Please provide a value for estimatedTime.'),
     check('materialsNeeded').exists({checkNull: true, checkFalsy: true}).withMessage('Please provide a value for materialsNeeded.'),
     
-], async (req, res) => {
-    try {
+], asyncHandler(async (req, res) => {
         const errors = validationResult(req);
     
         if(!errors.isEmpty()) {
@@ -112,17 +121,14 @@ router.post('/courses', authenticateUser.data.authenticateUser, [
             description: newCourse.description,
             estimatedTime: newCourse.estimatedTime,
             materialsNeeded: newCourse.materialsNeeded,
-            userId: 1
+            userId: newCourse.userId
            
         })
         
         const courseParam = course.dataValues.id
         res.location(`/courses/${courseParam}`)
         res.status(201).end(); 
-    }catch(error) {
-        console.warn(error);
-    }
          
-})
+}))
 
 module.exports = router;

@@ -10,27 +10,33 @@ const db = require('../db');
 const { User, Course } = db.models;
 
 
-router.get('/users', authenticateUser.data.authenticateUser, (req, res) => {
-    console.log("Start here");
-    console.log(authenticateUser);
+function asyncHandler(cb){
+  return async (req, res, next)=>{
+    try {
+      await cb(req,res, next);
+    } catch(err){
+      next(err);
+    }
+  };
+}
+
+
+router.get('/users', authenticateUser.data.authenticateUser, asyncHandler((req, res) => {
     const user = req.currentUser;
-    console.log(req.currentUser)
     res.json({
         name: user.firstName + " " + user.lastName,
         id: user.id
     });
-});
+}));
 
 
 router.post('/users', [
     check('firstName').exists({checkNull: true, checkFalsy: true}).withMessage('Please provide a value for first name.'),
     check('lastName').exists({checkNull: true, checkFalsy: true}).withMessage('Please provide a value for last name.'),
-    check('email').exists({checkNull: true, checkFalsy: true}).withMessage('Please provide a value for email.'),
+    check('email').isEmail().withMessage('Please enter a valid email address'),
     check('password').exists({checkNull: true, checkFalsy: true}).withMessage('Please provide a value for password.'),
     
-], (req, res) => {
-    
-    try {
+], asyncHandler(async(req, res) => {
         const errors = validationResult(req);
     
         if(!errors.isEmpty()) {
@@ -38,24 +44,24 @@ router.post('/users', [
             return res.status(400).json({errors: errorMessages});
         }
         const user = req.body;
-        user.password = bcryptjs.hashSync(user.password);
-
-        User.create({
-            firstName: user.firstName,
-            lastName: user.lastName,
-            emailAddress: user.email,
-            password: user.password
-        }),
-        res.location('/');
-        res.status(201).end();
-    }catch(error) {
-        console.log("Fuck this")
-        console.warn(error);
+        const emailAlreadyExists = await User.findOne({where: {emailAddress: user.email}});
         
-    }
-    
-    
-});
+        if(!emailAlreadyExists) {
+            user.password = bcryptjs.hashSync(user.password);
+
+            User.create({
+                firstName: user.firstName,
+                lastName: user.lastName,
+                emailAddress: user.email,
+                password: user.password
+            }),
+            res.location('/');
+            res.status(201).end();
+            
+        }else {
+            res.status(409).json({message: "email address already in use."})
+        }  
+}));
 
 
 module.exports = router;

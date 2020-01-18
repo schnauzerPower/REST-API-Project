@@ -11,7 +11,7 @@ module.exports = (sequelize) => {
           autoIncrement: true,
         },
         title: {
-            type: Sequelize.STRING,
+            type: Sequelize.TEXT,
             validate: {
                 notEmpty: {
                     msg: '"Title" is required'
